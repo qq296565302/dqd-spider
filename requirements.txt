@@ -1,0 +1,34 @@
+# Web爬虫相关
+requests==2.31.0
+beautifulsoup4==4.12.2
+lxml==4.9.3
+selenium==4.15.2
+
+# 数据库相关
+pymongo==4.6.0
+
+# 定时任务相关
+APScheduler==3.10.4
+
+# 数据处理相关
+pandas==2.1.4
+numpy==1.24.3
+
+# 日志和配置相关
+loguru==0.7.2
+python-dotenv==1.0.0
+
+# 工具库
+retrying==1.3.4
+tqdm==4.66.1
+fake-useragent==1.4.0
+
+# 时间处理
+python-dateutil==2.8.2
+pytz==2023.3
+
+# JSON处理
+orjson==3.9.10
+
+# HTTP客户端
+httpx==0.25.2
