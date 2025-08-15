@@ -79,15 +79,32 @@ class TeamDatabaseManager:
         创建数据库索引
         """
         try:
-            # 为team_id创建唯一索引，防止重复数据
-            self.collection.create_index("team_id", unique=True)
-            # 为联赛和球队名称创建索引
-            self.collection.create_index("league")
-            self.collection.create_index("team_name")
+            # 获取现有索引列表
+            existing_indexes = [index['name'] for index in self.collection.list_indexes()]
+            
+            # 为team_name和team_id组合创建唯一索引，防止重复数据
+            if "team_name_1_team_id_1" not in existing_indexes:
+                self.collection.create_index([("team_name", 1), ("team_id", 1)], unique=True, name="team_name_1_team_id_1")
+            
+            # 为联赛创建索引
+            if "league_1" not in existing_indexes:
+                self.collection.create_index("league", name="league_1")
+            
+            # 为球队名称创建索引
+            if "team_name_1" not in existing_indexes:
+                self.collection.create_index("team_name", name="team_name_1")
+            
+            # 为team_id创建索引
+            if "team_id_1" not in existing_indexes:
+                self.collection.create_index("team_id", name="team_id_1")
+            
             # 为创建时间创建索引
-            self.collection.create_index("created_at")
+            if "created_at_1" not in existing_indexes:
+                self.collection.create_index("created_at", name="created_at_1")
+            
             # 为球队名称创建文本索引，便于搜索
-            self.collection.create_index([("team_name", "text")])
+            if "team_name_text" not in existing_indexes:
+                self.collection.create_index([("team_name", "text")], name="team_name_text")
             
             self.logger.info("球队数据库索引创建成功")
         except Exception as e:
@@ -95,13 +112,13 @@ class TeamDatabaseManager:
     
     def insert_team(self, team_data: Dict[str, Any]) -> bool:
         """
-        插入单个球队数据
+        插入单个球队数据，如果team_name和team_id组合已存在则更新数据
         
         Args:
             team_data: 球队数据字典，必须包含team_id, team_name, team_logo, scheme字段
             
         Returns:
-            bool: 插入是否成功
+            bool: 插入或更新是否成功
         """
         try:
             # 验证必需字段
@@ -111,24 +128,33 @@ class TeamDatabaseManager:
                     self.logger.error(f"缺少必需字段: {field}")
                     return False
             
-            # 添加时间戳
-            team_data['created_at'] = datetime.now()
-            team_data['updated_at'] = datetime.now()
+            # 检查是否存在相同的team_name和team_id组合
+            existing_team = self.find_team_by_name_and_id(team_data['team_name'], team_data['team_id'])
             
-            # 插入数据
-            result = self.collection.insert_one(team_data)
-            
-            if result.inserted_id:
-                self.logger.info(f"成功插入球队数据: {team_data['team_name']} (ID: {team_data['team_id']})")
-                return True
+            if existing_team:
+                # 如果存在，则更新数据
+                self.logger.info(f"发现相同球队，更新数据: {team_data['team_name']} (ID: {team_data['team_id']})")
+                return self.update_team_by_name_and_id(team_data['team_name'], team_data['team_id'], team_data)
             else:
-                self.logger.error(f"插入球队数据失败: {team_data['team_name']}")
-                return False
+                # 如果不存在，则插入新数据
+                # 添加时间戳
+                team_data['created_at'] = datetime.now()
+                team_data['updated_at'] = datetime.now()
                 
+                # 插入数据
+                result = self.collection.insert_one(team_data)
+                
+                if result.inserted_id:
+                    self.logger.info(f"成功插入球队数据: {team_data['team_name']} (ID: {team_data['team_id']})")
+                    return True
+                else:
+                    self.logger.error(f"插入球队数据失败: {team_data['team_name']}")
+                    return False
+                    
         except DuplicateKeyError:
             self.logger.warning(f"球队数据已存在: {team_data['team_name']} (ID: {team_data['team_id']})")
             # 尝试更新现有数据
-            return self.update_team(team_data['team_id'], team_data)
+            return self.update_team_by_name_and_id(team_data['team_name'], team_data['team_id'], team_data)
         except Exception as e:
             self.logger.error(f"插入球队数据异常: {e}")
             return False
@@ -200,6 +226,63 @@ class TeamDatabaseManager:
         except Exception as e:
             self.logger.error(f"查找球队数据异常: {e}")
             return None
+    
+    def find_team_by_name_and_id(self, team_name: str, team_id: str) -> Optional[Dict[str, Any]]:
+        """
+        根据team_name和team_id组合查找球队
+        
+        Args:
+            team_name: 球队名称
+            team_id: 球队ID
+            
+        Returns:
+            Dict[str, Any]: 球队数据，如果未找到返回None
+        """
+        try:
+            result = self.collection.find_one({
+                'team_name': team_name,
+                'team_id': team_id
+            })
+            return result
+        except Exception as e:
+            self.logger.error(f"查找球队数据异常: {e}")
+            return None
+    
+    def update_team_by_name_and_id(self, team_name: str, team_id: str, update_data: Dict[str, Any]) -> bool:
+        """
+        根据team_name和team_id组合更新球队数据
+        
+        Args:
+            team_name: 球队名称
+            team_id: 球队ID
+            update_data: 更新的数据
+            
+        Returns:
+            bool: 更新是否成功
+        """
+        try:
+            # 添加更新时间
+            update_data['updated_at'] = datetime.now()
+            
+            # 更新数据
+            result = self.collection.update_one(
+                {
+                    'team_name': team_name,
+                    'team_id': team_id
+                },
+                {'$set': update_data}
+            )
+            
+            if result.modified_count > 0:
+                self.logger.info(f"成功更新球队数据: {team_name} (ID: {team_id})")
+                return True
+            else:
+                self.logger.warning(f"未找到要更新的球队: {team_name} (ID: {team_id})")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"更新球队数据异常: {e}")
+            return False
     
     def find_teams_by_league(self, league: str) -> List[Dict[str, Any]]:
         """
