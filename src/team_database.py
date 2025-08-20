@@ -301,6 +301,66 @@ class TeamDatabaseManager:
             self.logger.error(f"查找联赛球队数据异常: {e}")
             return []
     
+    def find_all_teams(self) -> List[Dict[str, Any]]:
+        """
+        查询所有球队数据
+        
+        Returns:
+            List[Dict[str, Any]]: 所有球队数据列表
+        """
+        try:
+            results = list(self.collection.find({}))
+            self.logger.info(f"查询到 {len(results)} 支球队")
+            return results
+        except Exception as e:
+            self.logger.error(f"查询所有球队数据异常: {e}")
+            return []
+    
+    def update_team_base_info(self, team_id: str, base_info: Dict[str, Any]) -> bool:
+        """
+        更新球队的base_info详细信息
+        
+        Args:
+            team_id: 球队ID
+            base_info: 包含address、telephone、email、city、founded、venue_name、venue_capacity等字段的字典
+            
+        Returns:
+            bool: 更新是否成功
+        """
+        try:
+            # 提取需要的字段
+            update_fields = {}
+            target_fields = ['address', 'telephone', 'email', 'city', 'founded', 'venue_name', 'venue_capacity']
+            
+            for field in target_fields:
+                if field in base_info and base_info[field] is not None:
+                    update_fields[field] = base_info[field]
+            
+            if not update_fields:
+                self.logger.warning(f"球队 {team_id} 没有可更新的base_info字段")
+                return False
+            
+            # 添加更新时间
+            update_fields['updated_at'] = datetime.now()
+            update_fields['base_info_updated_at'] = datetime.now()
+            
+            # 更新数据
+            result = self.collection.update_one(
+                {'team_id': team_id},
+                {'$set': update_fields}
+            )
+            
+            if result.modified_count > 0:
+                self.logger.info(f"成功更新球队 {team_id} 的base_info信息: {list(update_fields.keys())}")
+                return True
+            else:
+                self.logger.warning(f"未找到要更新的球队: {team_id}")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"更新球队base_info异常: {e}")
+            return False
+    
     def search_teams(self, keyword: str) -> List[Dict[str, Any]]:
         """
         搜索球队（按名称）

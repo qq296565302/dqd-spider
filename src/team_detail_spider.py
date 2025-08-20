@@ -297,12 +297,16 @@ class TeamDetailSpider:
                 base_info = parsed_data.get('base_info', {})
                 if base_info:
                     self.logger.info("成功提取base_info数据")
+                    
+                    # 提取目标字段
+                    extracted_info = self._extract_target_fields(base_info)
+                    
                     print("\n=== 球队基础信息 ===")
-                    for key, value in base_info.items():
+                    for key, value in extracted_info.items():
                         print(f"{key}: {value}")
                     print("===================\n")
                     
-                    return {'base_info': base_info}
+                    return {'base_info': extracted_info, 'full_base_info': base_info}
                 else:
                     self.logger.warning("未找到base_info字段")
             
@@ -310,6 +314,28 @@ class TeamDetailSpider:
         except Exception as e:
             self.logger.warning(f"解析teamDetail对象时出错: {e}")
             return None
+    
+    def _extract_target_fields(self, base_info: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        从base_info中提取目标字段：address、telephone、email、city、founded、venue_name、venue_capacity
+        
+        Args:
+            base_info: 完整的base_info数据
+            
+        Returns:
+            包含目标字段的字典
+        """
+        target_fields = ['address', 'telephone', 'email', 'city', 'founded', 'venue_name', 'venue_capacity']
+        extracted = {}
+        
+        for field in target_fields:
+            if field in base_info and base_info[field] is not None:
+                extracted[field] = base_info[field]
+                self.logger.info(f"提取到字段 {field}: {base_info[field]}")
+            else:
+                self.logger.debug(f"字段 {field} 不存在或为空")
+        
+        return extracted
     
 
 
