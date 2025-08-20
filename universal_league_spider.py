@@ -360,7 +360,7 @@ if __name__ == "__main__":
     
     # 示例：爬取英超数据
     print("🚀 开始爬取数据...")
-    success, count = crawl_custom_league("西甲", "https://www.dongqiudi.com/data/3")
+    success, count = crawl_custom_league("意甲", "https://www.dongqiudi.com/data/2")
     
     if success:
         print(f"✅ 数据爬取成功，保存了 {count} 支球队")
