@@ -1,0 +1,10 @@
+2025-08-25 11:47:20,309 - team_spider - INFO - 正在调用API获取德甲数据...
+2025-08-25 11:47:20,425 - team_spider - INFO - 从API成功提取德甲 0支球队数据
+2025-08-25 11:47:20,426 - team_spider - INFO - 正在访问德甲页面: https://www.dongqiudi.com/data/4
+2025-08-25 11:47:20,674 - team_spider - WARNING - 未能从德甲页面提取球队数据
+2025-08-25 11:47:20,674 - team_spider - WARNING - 所有方法都未能获取到德甲的球队信息
+2025-08-25 11:47:29,524 - team_spider - INFO - 正在调用API获取英超数据...
+2025-08-25 11:47:29,613 - team_spider - INFO - 从API成功提取英超 0支球队数据
+2025-08-25 11:47:29,613 - team_spider - INFO - 正在访问英超页面: https://www.dongqiudi.com/data/1
+2025-08-25 11:47:29,797 - team_spider - WARNING - 未能从英超页面提取球队数据
+2025-08-25 11:47:29,798 - team_spider - WARNING - 所有方法都未能获取到英超的球队信息
